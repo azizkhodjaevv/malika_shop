@@ -1,48 +1,72 @@
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-from tv_data import TVS, CURRENCY
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from tv_data import tv_prices
 
-# Formatlash funksiyasi 
-def format_prices(brand):
-    result = []
-    models = TVS.get(brand, [])
-    if not models:
-        return "Ma'lumot topilmadi."
-    
-    result.append(f"*{brand} modellari:*")
-    for tv in models:
-        series = f" ({tv['series']})" if tv.get("series") else ""
-        line = f"• `{tv['model']}` — *{tv['price']}* {CURRENCY}{series}"
-        result.append(line)
-    return "\n".join(result)
+# Telegram bot tokeningiz
+TELEGRAM_TOKEN = "8182175539:AAFrI70ITVYjbdguULzULEymHj1yV_0H6MY"
 
-# /start buyrug‘i
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tugmalar = [
-        ["Samsung 📺", "LG 📺"],
-        ["MOONX 📺", "SKYWORTH 📺"],
-        ["RULLS 📺", "7TECH 📺"],
-        ["IMMER 📺", "ZIFFLER 📺"],
-        ["SONY 📺", "TOSHIBA 📺"],
-        ["HISENSE 📺"]
+# Brend tugmalarini qurish
+def build_keyboard():
+    brands = list(tv_prices.keys())
+
+    keyboard = [
+        [InlineKeyboardButton(brands[i], callback_data=brands[i]),
+         InlineKeyboardButton(brands[i + 1], callback_data=brands[i + 1])]
+        for i in range(0, len(brands) - 1, 2)
     ]
-    await update.message.reply_text(
-        "Assalomu alaykum!\nQaysi televizor narxini ko‘rmoqchisiz?",
-        reply_markup=ReplyKeyboardMarkup(tugmalar, resize_keyboard=True)
-    )
 
-# Tugmani bosganda javob qaytarish
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.lower()
-    for brand in TVS:
-        if brand.lower() in text:
-            msg = format_prices(brand)
-            await update.message.reply_markdown(msg)
-            return
-    await update.message.reply_text("Bunday brend topilmadi.")
+    if len(brands) % 2 != 0:
+        keyboard.append([InlineKeyboardButton(brands[-1], callback_data=brands[-1])])
 
-# Botni ishga tushurish
-app = ApplicationBuilder().token("8182175539:AAHTdi4ipR0lFLKw6nFqAvHxTR9H5Y0AdSU").build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-app.run_polling()
+    keyboard.append([InlineKeyboardButton("📍 Manzilni ko‘rish", callback_data="location")])
+
+    return InlineKeyboardMarkup(keyboard)
+
+# /start komandasi
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reply_markup = build_keyboard()
+    await update.message.reply_text("📺 Televizor brendini tanlang:", reply_markup=reply_markup)
+
+# Tugma bosilganda ishlovchi funksiyalar
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+
+    if data == "location":
+        # Malika bozor, B20 do‘kon koordinatalari
+        latitude = 41.300312
+        longitude = 69.250252
+
+        await query.message.reply_location(latitude=latitude, longitude=longitude)
+
+        await query.message.reply_text(
+            "📍 Toshkent shahar, Malika bozor, B20 do‘kon\n\n"
+            "Agar topa olmasangiz yoki yordam kerak bo‘lsa:\n"
+            "📞 [24/7: +998 97-188-33-30](tel:+998971883330)",
+            parse_mode="Markdown"
+        )
+        return
+
+    # Brendga tegishli narxlar
+    prices = tv_prices.get(data, "Ma'lumot topilmadi.")
+
+    message = f"""📦 {data} narxlari:
+
+{prices}
+
+📞 [24/7: +998 97-188-33-30](tel:+998971883330)
+🚚 Shahar bo'yicha yetkazib berish (dastavka) mavjud
+🛠 O'rnatib berish xizmati ham mavjud
+"""
+
+    reply_markup = build_keyboard()
+    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode="Markdown")
+
+# Botni ishga tushirish
+if __name__ == '__main__':
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    app.run_polling()
