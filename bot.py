@@ -40,10 +40,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("Nomaʼlum buyruq!")
 
-# Build and run
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(button))
-
+# Run bot
 if __name__ == "__main__":
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))
     app.run_polling()
