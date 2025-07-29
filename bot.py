@@ -1,71 +1,57 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
-from tv_data import tv_prices
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
+import os
 
-# Telegram bot tokeningiz
-TELEGRAM_TOKEN = "8182175539:AAFrI70ITVYjbdguULzULEymHj1yV_0H6MY"
+# TOKEN
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 
-# Brend tugmalarini qurish
+# TV narxlari (misol)
+tv_prices = {
+    "Samsung": "📺 Samsung TV narxlari:\n- 55” = 5,500,000 so'm\n- 65” = 7,000,000 so'm",
+    "LG": "📺 LG TV narxlari:\n- 55” = 5,200,000 so'm\n- 65” = 6,800,000 so'm",
+    "MOONX": "📺 MOONX TV narxlari:\n- 43” = 3,300,000 so'm\n- 50” = 3,900,000 so'm",
+    "SKYWORTH": "📺 SKYWORTH TV narxlari:\n- 32” = 2,100,000 so'm\n- 43” = 2,900,000 so'm",
+    "RULLS": "📺 RULLS TV narxlari:\n- 32” = 1,700,000 so'm\n- 43” = 2,600,000 so'm",
+    "7TECH": "📺 7TECH TV narxlari:\n- 24” = 1,400,000 so'm\n- 32” = 1,850,000 so'm",
+    "IMMER": "📺 IMMER TV narxlari:\n- 43” = 2,500,000 so'm\n- 55” = 3,900,000 so'm",
+    "ZIFFLER": "📺 ZIFFLER TV narxlari:\n- 32” = 1,600,000 so'm\n- 40” = 2,100,000 so'm",
+    "SONY": "📺 SONY TV narxlari:\n- 50” = 5,900,000 so'm\n- 65” = 8,300,000 so'm",
+    "TOSHIBA": "📺 TOSHIBA TV narxlari:\n- 32” = 2,400,000 so'm\n- 43” = 3,300,000 so'm",
+    "HISENSE": "📺 HISENSE TV narxlari:\n- 40” = 2,800,000 so'm\n- 50” = 3,600,000 so'm",
+}
+
+# Tugma yasash
 def build_keyboard():
-    brands = list(tv_prices.keys())
-
-    keyboard = [
-        [InlineKeyboardButton(brands[i], callback_data=brands[i]),
-         InlineKeyboardButton(brands[i + 1], callback_data=brands[i + 1])]
-        for i in range(0, len(brands) - 1, 2)
+    buttons = [
+        [InlineKeyboardButton(brand, callback_data=brand)] for brand in tv_prices.keys()
     ]
+    return InlineKeyboardMarkup(buttons)
 
-    if len(brands) % 2 != 0:
-        keyboard.append([InlineKeyboardButton(brands[-1], callback_data=brands[-1])])
-
-    keyboard.append([InlineKeyboardButton("📍 Manzilni ko‘rish", callback_data="location")])
-
-    return InlineKeyboardMarkup(keyboard)
-
-# /start komandasi
+# /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_markup = build_keyboard()
-    await update.message.reply_text("📺 Televizor brendini tanlang:", reply_markup=reply_markup)
+    await update.message.reply_text(
+        "Assalomu alaykum! Televizor brendini tanlang 👇",
+        reply_markup=build_keyboard()
+    )
 
-# Tugma bosilganda ishlovchi funksiyalar
+# Tugma bosilganda
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    brand = query.data
+    prices = tv_prices.get(brand, "Ma'lumot topilmadi.")
 
-    data = query.data
-
-    if data == "location":
-        # Malika bozor, B20 do‘kon koordinatalari
-        latitude = 41.300312
-        longitude = 69.250252
-
-        await query.message.reply_location(latitude=latitude, longitude=longitude)
-
-        await query.message.reply_text(
-            "📍 Toshkent shahar, Malika bozor, B20 do‘kon\n\n"
-            "Agar topa olmasangiz yoki yordam kerak bo‘lsa:\n"
-            "📞 [24/7: +998 97-188-33-30](tel:+998971883330)",
-            parse_mode="Markdown"
-        )
-        return
-
-    # Brendga tegishli narxlar
-    prices = tv_prices.get(data, "Ma'lumot topilmadi.")
-
-    message = f"""📦 {data} narxlari:
-
-{prices}
+    message = f"""📺 *{brand}* narxlari:\n{prices}
 
 📞 [24/7: +998 97-188-33-30](tel:+998971883330)
-🚚 Shahar bo'yicha yetkazib berish (dastavka) mavjud
-🛠 O'rnatib berish xizmati ham mavjud
+📍 Manzil: [Toshkent, Malika Bozori B20](https://maps.app.goo.gl/UjkVEXPrnaGonokC7)
+🚛 Yetkazib berish va o'rnatish xizmati mavjud.
 """
 
-    reply_markup = build_keyboard()
-    await query.edit_message_text(message, reply_markup=reply_markup, parse_mode="Markdown")
+    await query.edit_message_text(message, reply_markup=build_keyboard(), parse_mode="Markdown")
 
-# Botni ishga tushirish
-if __name__ == '__main__':
+# Run
+if __name__ == "__main__":
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
