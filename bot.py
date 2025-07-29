@@ -1,19 +1,17 @@
 import os
-from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from tv_data import tv_prices
 
-# .env yoki render.com secret faylidan tokenni o‘qish
-load_dotenv("/etc/secrets/TELEGRAM_TOKEN")
+# Tokenni faqat Render.com dagi Environment Variable dan olamiz
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-# Tugmalar yasash
+# Tugmalar yasash funksiyasi
 def build_keyboard():
     keyboard = [[InlineKeyboardButton(brand, callback_data=brand)] for brand in tv_prices.keys()]
     return InlineKeyboardMarkup(keyboard)
 
-# /start komandasi
+# /start komandasi uchun handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📺 Malika bozori B20 do'kondagi televizor narxlari botiga xush kelibsiz!\n\n"
@@ -21,7 +19,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=build_keyboard()
     )
 
-# Tugma bosilganda
+# Tugma bosilganda ishlaydigan handler
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -41,8 +39,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
     await query.edit_message_text(text=message, parse_mode="Markdown", reply_markup=build_keyboard())
 
-# Botni ishga tushurish
+# Botni ishga tushirish
 if __name__ == '__main__':
+    if not TELEGRAM_TOKEN:
+        raise ValueError("TELEGRAM_TOKEN not set in environment variables!")
+
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
