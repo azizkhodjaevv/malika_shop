@@ -1,7 +1,7 @@
 import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, ContextTypes
-from tv_data import tv_data
+from tv_data import tv_prices
 import os
 from dotenv import load_dotenv
 
@@ -20,7 +20,7 @@ logging.basicConfig(
 # Start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton(brand, callback_data=brand)] for brand in tv_data.keys()
+        [InlineKeyboardButton(brand, callback_data=brand)] for brand in tv_prices.keys()
     ]
     keyboard.append([InlineKeyboardButton("📍 Joylashuv", url="https://maps.app.goo.gl/KabQXZCpkDq7B2Nw6")])
     keyboard.append([InlineKeyboardButton("📞 Aloqa", callback_data="contact")])
@@ -35,16 +35,15 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     brand = query.data
     if brand == "contact":
         await query.edit_message_text("📞 Aloqa: +998 90 123 45 67\n📍 Manzil: Malika Bozori, B20 do‘kon")
-    elif brand in tv_data:
-        tv_list = "\n".join([f"{model} — {price}" for model, price in tv_data[brand]])
-        await query.edit_message_text(f"📺 {brand} narxlari:\n\n{tv_list}")
+    elif brand in tv_prices:
+        await query.edit_message_text(tv_prices[brand])
     else:
         await query.edit_message_text("Nomaʼlum buyruq!")
 
-# Build application
+# Build and run
 app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button))
 
-# Run
+if __name__ == "__main__":
+    app.run_polling()
