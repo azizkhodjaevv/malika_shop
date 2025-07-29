@@ -1,9 +1,12 @@
+import os
+from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from tv_data import tv_prices
-import os
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "8182175539:AAFrI70ITVYjbdguULzULEymHj1yV_0H6MY")
+# .env yoki render.com secret faylidan tokenni o‘qish
+load_dotenv("/etc/secrets/TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # Tugmalar yasash
 def build_keyboard():
@@ -36,7 +39,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 🚚 Shahar bo‘ylab yetkazib berish xizmati mavjud
 🛠️ O‘rnatib berish xizmati ham mavjud
 """
-
     await query.edit_message_text(text=message, parse_mode="Markdown", reply_markup=build_keyboard())
 
 # Botni ishga tushurish
